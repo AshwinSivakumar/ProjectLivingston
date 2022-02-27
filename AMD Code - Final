@@ -1,0 +1,154 @@
+#include <LiquidCrystal.h>
+#include <Servo.h>
+
+Servo Servo1;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+
+//Bluetooth Variables
+int pos = 0;    // variable to store the servo position
+int led = 13;
+int count=0;
+int state = 0;
+int servoPin = 9;
+// LCD and AMD miscellaneous variables
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+int irpin = 7;
+
+void setup() {
+  // LED and Servo Motor Initialization
+  pinMode(led, OUTPUT);
+   Servo1.attach(servoPin);  // attaches the servo on pin 9 to the servo object
+  Serial.begin(9600); // Default communication rate of the Bluetooth module
+  // LCD Initialization
+   lcd.begin(16, 2);
+  lcd.setCursor(0,0);
+  lcd.print("    AMD PLUS   ");
+  // IR pin Initialization
+   pinMode(irpin, INPUT);
+   
+}
+void loop() {
+  Servo1.write(0);
+  delay(1000);
+  for (int i = 0; i <= 180; i +=1)
+  {
+    
+    //Serial.println(i);
+    delay(250); // to change the timing of each slot changed 1000 to 300 on 01/11/17
+    
+    if ( i == 0 | i == 60 | i == 120 | i == 180)
+    {
+      Servo1.write(i);
+      if ( i == 0)
+      {     lcd.setCursor(0,1);
+            lcd.print( " LOAD MEDICINE");
+      }
+      else
+      {   lcd.setCursor(0,1);
+          lcd.print( "COLLECT MEDICINE  ");
+      }
+      while (digitalRead(irpin) == LOW)
+      {
+
+        if ( i == 0)
+        {
+          digitalWrite(led, HIGH);
+          delay(1000);
+          digitalWrite(led, LOW);
+          delay(1000);
+        }
+        else
+        {
+          digitalWrite(led, HIGH);
+          delay(100);
+          digitalWrite(led,LOW);
+          delay(500);
+        }
+      }
+    if(digitalRead(irpin) == HIGH)
+    { 
+      //digitalWrite(irpin,HIGH);
+      lcd.setCursor(0,1);
+      lcd.print(" PUT TRAY BACK  ");
+     digitalWrite(irpin,LOW);
+    }
+    
+    else
+    {
+      lcd.setCursor(0,1);
+      lcd.print("                ");
+    }
+    
+   // when tray opened timmer stops till tray  closes. added on 2/11/17   
+   
+   while(digitalRead(irpin) == HIGH) 
+   
+    { 
+          digitalWrite(led, HIGH);
+          delay(100);
+          digitalWrite(led,LOW);
+          delay(2000);
+      
+    }
+    if ( i == 180 )
+      {                   
+        Servo1.write(0);
+        delay(200);
+      }
+      digitalWrite(led, LOW);
+     
+    }
+  if(Serial.available() > 0){ // Checks whether data is comming from the serial port
+    state = Serial.read(); // Reads the data from the serial port
+ }
+ if (state == '0') {
+  digitalWrite(led, LOW); // Turn LED OFF
+  Serial.println("LED: OFF"); // Send back, to the phone, the String "LED: ON"
+  state = 0;
+  
+ }
+ else if (state == '1') {
+  digitalWrite(led, HIGH);
+  Serial.println("LED: ON");
+  //state = 0;
+  if(count==0)
+  {
+   for (pos = 0; pos <= 60; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    Servo1.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  }
+  else if(count==1)
+  {
+    for (pos = 60; pos <= 120; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    Servo1.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  }
+ 
+   else if(count==2)
+  {
+    for (pos = 120; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    Servo1.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  }
+count++;
+  Serial.println(count);
+  if(count>3)
+  {
+    delay(2000);
+    for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    Servo1.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15); 
+    count = 0;
+    // waits 15ms for the servo to reach the position
+  }
+  }
+ } 
+  }
+}
